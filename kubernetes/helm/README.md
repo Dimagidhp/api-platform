@@ -16,7 +16,7 @@ The WSO2 API Platform has the following offerings.
 | Standalone API Gateway | A gateway for API traffic | `gateway` |
 | API Gateway and API Portal | An API Gateway, and a developer portal where consumers find and use your APIs | `api-portal`, `gateway` |
 | Standalone API Portal | A developer portal and MCP Hub | `api-portal` |
-| Combined AI and API | A gateway, the AI Workspace, and the API Portal, sharing one Platform API | `ai-workspace`, `api-portal`, `gateway` |
+| AI or API Gateway, AI Workspace, and API Portal | An AI or API Gateway, the AI Workspace, and the API Portal, sharing one Platform API | `ai-workspace`, `api-portal`, `gateway` |
 
 ## Components
 
@@ -83,16 +83,23 @@ Each section lists the steps for one offering. Install the charts in the order s
 
 1. Install the `api-portal` chart. Follow the steps in the [`api-portal` README](api-portal-helm-chart/README.md).
 
-### Combined AI and API
+### AI or API Gateway, AI Workspace, and API Portal
 
-In the combined offering, all components share the Platform API that the `ai-workspace` chart installs.
+In this offering, all components share the Platform API that the `ai-workspace` chart installs. Run the commands from the `kubernetes/helm` folder.
 
-1. Install the `ai-workspace` chart. Follow the steps in the [`ai-workspace` README](ai-workspace-helm-chart/README.md).
-2. Install the `api-portal` chart with the following values, so that it uses the shared Platform API.
+1. Install the `ai-workspace` chart. Follow the steps in the [`ai-workspace` README](ai-workspace-helm-chart/README.md). The steps below use the default release and namespace name, `ai-workspace`.
+2. Create the API Portal secret. Running the script with the `ai-workspace` namespace and release name gives the API Portal the public key of the shared Platform API.
+
+   ```bash
+   ./api-portal-helm-chart/generate-secrets.sh ai-workspace ai-workspace
+   ```
+
+3. Install the `api-portal` chart in the `ai-workspace` namespace with the following values. Follow the steps in the [`api-portal` README](api-portal-helm-chart/README.md), but skip its secrets step, because you created the secret in step 2.
    - Set `platform-api.enabled` to `false`.
    - Set `api-portal-ui.config.platformApi.baseUrl` to `https://ai-workspace-platform-api.ai-workspace.svc:9243`.
-   - For the other settings, see [Using an external Platform API](api-portal-helm-chart/README.md#using-an-external-platform-api).
-3. In the AI Workspace, go to **AI Gateways**, add a gateway, and copy the **Gateway Registration Token**.
-4. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
+   - If the Platform API uses a self-signed certificate, also set `api-portal-ui.config.platformApi.insecure` to `true`.
+4. In the AI Workspace, go to **AI Gateways**, add a gateway, and copy the **Gateway Registration Token**.
+5. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
    - Set `gateway.controller.controlPlane.host` to `ai-workspace-platform-api.ai-workspace.svc:9243`.
    - Set `gateway.controller.controlPlane.token.value` to the registration token.
+   - If the Platform API uses a self-signed certificate, also set `gateway.config.controller.controlplane.insecure_skip_verify` to `true`.
