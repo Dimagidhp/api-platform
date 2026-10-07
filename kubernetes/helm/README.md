@@ -74,7 +74,9 @@ Each section lists the steps for one offering. Install the charts in the order s
 ### API Gateway and API Portal
 
 1. Install the `api-portal` chart. Follow the steps in the [`api-portal` README](api-portal-helm-chart/README.md).
-2. Register the gateway with the Platform API and copy its registration token. <!-- TODO: add where the user gets the registration token for an API Gateway. -->
+2. Register the gateway and get its registration token from the Platform API REST API.
+   - Register the gateway with `POST /api/v0.9/gateways`. See [Register a new gateway](../../docs/rest-apis/platform-api/gateways.md#register-a-new-gateway).
+   - Create the registration token with `POST /api/v0.9/gateways/{gatewayId}/tokens`. See the [Gateway Tokens API](../../docs/rest-apis/platform-api/gateway-tokens.md#rotate-gateway-token).
 3. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
    - Set `gateway.controller.controlPlane.host` to `api-portal-platform-api.api-portal.svc:9243`. This is the Platform API address when you use the default release and namespace names.
    - Set `gateway.controller.controlPlane.token.value` to the registration token.
@@ -89,58 +91,25 @@ To install these components as one product, use an umbrella chart and add the co
 
 - You can use either umbrella chart, `ai-workspace` or `api-portal`. Start from one, and add the other console to it as a subchart.
 - One release then installs the shared Platform API, the AI Workspace, and the API Portal.
-- The steps below use the `ai-workspace` chart as an example. Run the commands from the `kubernetes/helm` folder.
+- The steps below use the `ai-workspace` chart as an example.
 
-1. Add the API Portal as a subchart of the `ai-workspace` chart.
-   - In `ai-workspace-helm-chart/Chart.yaml`, add this entry at the end of `dependencies`.
+1. Add the API Portal as a subchart of the `ai-workspace` chart. In `ai-workspace-helm-chart/Chart.yaml`, add this entry at the end of `dependencies`.
 
-     ```yaml
-       - name: api-portal-ui
-         version: "1.0.0"
-         repository: "oci://ghcr.io/wso2/api-platform/helm-charts"
-         condition: api-portal-ui.enabled
-     ```
-
-   - In `ai-workspace-helm-chart/values.yaml`, add the following. The chart then still installs only the AI Workspace by default, and installs the API Portal only when you turn it on in your own values file.
-
-     ```yaml
-     api-portal-ui:
-       enabled: false
-     ```
-
-2. Create the secrets for all components, and download the subcharts. `API_PORTAL=true` also creates the API Portal secret, which holds the public key of the shared Platform API.
-
-   ```bash
-   API_PORTAL=true ./ai-workspace-helm-chart/generate-secrets.sh ai-workspace
-   helm dependency update ./ai-workspace-helm-chart
+   ```yaml
+     - name: api-portal-ui
+       version: "1.0.0"
+       repository: "oci://ghcr.io/wso2/api-platform/helm-charts"
+       condition: api-portal-ui.enabled
    ```
 
-3. Create values files for your own settings. You can use one file per component, as below, or put all settings in one file, for example `my_values.yaml`. In each file, put the settings under the subchart name.
-   - `values-global.yaml` holds `global` settings shared by all components, such as image pull secrets.
-   - `values-platform-api.yaml` holds `platform-api` settings, such as the database and authentication.
-   - `values-ai-workspace-ui.yaml` holds `ai-workspace-ui` settings. Set `config.gateway.controlplaneHost` to the Platform API address that gateways use. The AI Workspace shows this address in its gateway setup commands.
-   - `values-api-portal-ui.yaml` holds `api-portal-ui` settings. Turn on the API Portal here.
-
-     ```yaml
-     api-portal-ui:
-       enabled: true
-     ```
-
-   - If the Platform API uses a self-signed certificate, also set `ai-workspace-ui.config.controlPlane.tlsSkipVerify` and `api-portal-ui.config.platformApi.insecure` to `true`.
-   - For all available settings, see the `values.yaml` file of each component chart.
-4. Install the chart. Pass only the values files you created. Helm merges them from left to right.
-
-   ```bash
-   helm upgrade --install ai-workspace ./ai-workspace-helm-chart -n ai-workspace \
-     -f values-secrets.yaml \
-     -f values-global.yaml \
-     -f values-platform-api.yaml \
-     -f values-ai-workspace-ui.yaml \
-     -f values-api-portal-ui.yaml
-   ```
-
-5. In the AI Workspace, go to **AI Gateways**, add a gateway, and copy the **Gateway Registration Token**.
-6. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
+2. Install the `ai-workspace` chart. Follow the steps in the [`ai-workspace` README](ai-workspace-helm-chart/README.md), with these changes.
+   - When you generate the secrets by running the script, set `API_PORTAL=true`, so that the script also creates the API Portal secret.
+   - When you install the chart, set the following values.
+     - Set `api-portal-ui.enabled` to `true`.
+     - Set `ai-workspace-ui.config.gateway.controlplaneHost` to the Platform API address that gateways use. The AI Workspace shows this address in its gateway setup commands.
+     - If the Platform API uses a self-signed certificate, also set `ai-workspace-ui.config.controlPlane.tlsSkipVerify` and `api-portal-ui.config.platformApi.insecure` to `true`.
+3. In the AI Workspace, go to **AI Gateways**, add a gateway, and copy the **Gateway Registration Token**.
+4. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
    - Set `gateway.controller.controlPlane.host` to `ai-workspace-platform-api.ai-workspace.svc:9243`.
    - Set `gateway.controller.controlPlane.token.value` to the registration token.
    - If the Platform API uses a self-signed certificate, also set `gateway.config.controller.controlplane.insecure_skip_verify` to `true`.
