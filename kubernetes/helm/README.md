@@ -61,10 +61,11 @@ Each section lists the steps for one offering. Install the charts in the order s
 ### AI Gateway and AI Workspace
 
 1. Install the `ai-workspace` chart. Follow the steps in the [`ai-workspace` README](ai-workspace-helm-chart/README.md).
-2. In the AI Workspace, go to **AI Gateways**, add a gateway, and copy the **Gateway Registration Token**.
+2. In the AI Workspace, go to **AI Gateways** and add a gateway. The AI Workspace copies the **Gateway Registration Token** for you.
 3. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
    - Set `gateway.controller.controlPlane.host` to `ai-workspace-platform-api.ai-workspace.svc:9243`. This is the Platform API address when you use the default release and namespace names.
    - Set `gateway.controller.controlPlane.token.value` to the registration token.
+   - If the Platform API uses a self-signed certificate, also set `gateway.config.controller.controlplane.insecure_skip_verify` to `true`.
 4. In the AI Workspace, check that the gateway status is **Active**.
 
 > **Tip:** The **Kubernetes** tab on the gateway page shows a `helm install` command you can copy.
@@ -80,6 +81,7 @@ Each section lists the steps for one offering. Install the charts in the order s
 3. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
    - Set `gateway.controller.controlPlane.host` to `api-portal-platform-api.api-portal.svc:9243`. This is the Platform API address when you use the default release and namespace names.
    - Set `gateway.controller.controlPlane.token.value` to the registration token.
+   - If the Platform API uses a self-signed certificate, also set `gateway.config.controller.controlplane.insecure_skip_verify` to `true`.
 
 ### Standalone API Portal
 
