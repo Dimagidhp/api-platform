@@ -104,23 +104,42 @@ To install these components as one product, use an umbrella chart and add the co
 
 2. Install the `ai-workspace` chart. Follow the steps in the [`ai-workspace` README](ai-workspace-helm-chart/README.md), with these changes.
    - When you generate the secrets by running the script, set `API_PORTAL=true`, so that the script also creates the API Portal secret.
-   - When you install the chart, create a values file for each subchart in the `kubernetes/helm` folder, and put its settings under the subchart name. For example, `values-api-portal-ui.yaml` starts with `api-portal-ui:`.
+   - When you install the chart, create a values file for each subchart in the `kubernetes/helm` folder. In each file, put the settings under the subchart name, such as `platform-api`, `ai-workspace-ui`, or `api-portal-ui`. Put settings shared by all subcharts under `global`.
+     - In `values-api-portal-ui.yaml`, turn on the API Portal.
 
-     ```yaml
-     api-portal-ui:
-       enabled: true
-     ```
+       ```yaml
+       api-portal-ui:
+         enabled: true
+         config:
+           platformApi:
+             insecure: true   # Only if the Platform API uses a self-signed certificate
+       ```
 
-     Set the following values.
-     - Set `api-portal-ui.enabled` to `true`.
-     - Set `ai-workspace-ui.config.gateway.controlplaneHost` to the Platform API address that gateways use. The AI Workspace shows this address in its gateway setup commands.
-     - If the Platform API uses a self-signed certificate, also set `ai-workspace-ui.config.controlPlane.tlsSkipVerify` and `api-portal-ui.config.platformApi.insecure` to `true`.
+     - In `values-ai-workspace-ui.yaml`, set the Platform API address that gateways use. The AI Workspace shows this address in its gateway setup commands.
 
-     Add each values file to the install command with `-f`, as in the following example.
+       ```yaml
+       ai-workspace-ui:
+         config:
+           gateway:
+             controlplaneHost: <platform-api-host>:9243
+           controlPlane:
+             tlsSkipVerify: true   # Only if the Platform API uses a self-signed certificate
+       ```
+
+     - In `values-global.yaml`, add any settings shared by all subcharts, such as image pull secrets.
+
+       ```yaml
+       global:
+         imagePullSecrets:
+           - <secret-name>
+       ```
+
+     Add each values file to the install command with `-f`, as in the following example. Leave out any file that you didn't create.
 
      ```bash
      helm upgrade --install ai-workspace ./ai-workspace-helm-chart -n ai-workspace \
        -f values-secrets.yaml \
+       -f values-global.yaml \
        -f values-ai-workspace-ui.yaml \
        -f values-api-portal-ui.yaml
      ```
