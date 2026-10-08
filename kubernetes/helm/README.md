@@ -144,8 +144,14 @@ To install these components as one product, use an umbrella chart and add the co
        -f values-api-portal-ui.yaml
      ```
 
-3. In the AI Workspace, go to **AI Gateways**, add a gateway, and copy the **Gateway Registration Token**.
-4. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
+3. Open the AI Workspace and the API Portal.
+   - Run `helm status ai-workspace -n ai-workspace` and note the `EXTERNAL-IP` of each console. On a local cluster, use `localhost`.
+   - Open the AI Workspace at `https://<EXTERNAL-IP>:9643/ai-workspace/`.
+   - Open the API Portal at `https://<EXTERNAL-IP>:9543/api-portal/default/views/default`.
+   - Log in to each with the admin username and password that the secret script printed.
+4. In the AI Workspace, go to **AI Gateways** and add a gateway. The AI Workspace copies the **Gateway Registration Token** for you.
+5. Install the `gateway` chart with the following values. Follow the steps in the [`gateway` README](gateway-helm-chart/README.md).
    - Set `gateway.controller.controlPlane.host` to `ai-workspace-platform-api.ai-workspace.svc:9243`.
    - Set `gateway.controller.controlPlane.token.value` to the registration token.
    - If the Platform API uses a self-signed certificate, also set `gateway.config.controller.controlplane.insecure_skip_verify` to `true`.
+6. In the AI Workspace, check that the gateway status is **Active**.
